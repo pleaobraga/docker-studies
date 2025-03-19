@@ -1,0 +1,24 @@
+services:
+  nodeserver:
+    build:
+      context: ./node
+      dockerfile: Dockerfile.prod
+    image: pedrobraga/node:prod
+    container_name: nodeserver
+    networks:
+      - nodenet
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile.prod
+    image: pedrobraga/nginx:prod
+    container_name: nginx
+    networks:
+      - nodenet
+    ports:
+      - 8080:80
+
+networks: 
+  nodenet:
+    driver: bridge
