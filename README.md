@@ -2,17 +2,17 @@
 
 ## Overview
 
-This project demonstrates a multi-container Docker application comprising:
+This project demonstrates a multi-container Docker application featuring:
 
-- **MySQL Database**: Stores application data.
-- **Node.js Server**: Handles backend logic and serves content.
-- **Nginx Server**: Acts as a reverse proxy to manage incoming requests.
+- **MySQL Database**: Stores application data securely and persistently.
+- **Node.js Server**: Manages backend logic and serves dynamic content.
+- **Nginx Server**: Acts as a reverse proxy to efficiently manage incoming requests.
 
-The architecture ensures a modular and scalable setup, suitable for development and production environments.
+This architecture ensures modularity, scalability, and optimal performance for both development and production environments.
 
 ## Prerequisites
 
-Before proceeding, ensure you have the following installed:
+Before proceeding, ensure you have the following tools installed:
 
 - **Docker**: [Installation Guide](https://docs.docker.com/get-docker/)
 - **Docker Compose**: [Installation Guide](https://docs.docker.com/compose/install/)
@@ -28,8 +28,10 @@ docker-compose --version
 
 ```
 docker-studies/
+├── init-scripts/
+│   └── create-people-db.sql
 ├── mysql/
-│   └── ... (MySQL-related files)
+│   └── ... (MySQL data files)
 ├── nginx/
 │   ├── Dockerfile.prod
 │   └── ... (Nginx configuration files)
@@ -41,10 +43,11 @@ docker-studies/
 └── docker-compose.yml
 ```
 
-- **mysql/**: Contains MySQL data and configurations.
-- **nginx/**: Holds Nginx Dockerfile and configurations.
-- **node/**: Includes Node.js application code and Dockerfile.
-- **docker-compose.yml**: Defines services, networks, and volumes for Docker Compose.
+- **`init-scripts/`**: Contains SQL initialization scripts for database setup.
+- **`mysql/`**: Stores MySQL data and configurations.
+- **`nginx/`**: Contains the Nginx Dockerfile and configuration files.
+- **`node/`**: Houses the Node.js application code and Dockerfile.
+- **`docker-compose.yml`**: Defines services, networks, and volumes for Docker Compose.
 
 ## Setup and Deployment
 
@@ -57,7 +60,7 @@ cd docker-studies
 
 ### 2. Configure Environment Variables
 
-Ensure the `docker-compose.yml` file has the correct environment variables set for the MySQL service:
+Ensure the `docker-compose.yml` file includes the necessary environment variables:
 
 ```yaml
 services:
@@ -67,24 +70,44 @@ services:
       - MYSQL_ROOT_PASSWORD=root
 ```
 
-### 3. Build and Start Services
+### 3. Database Initialization
 
-Use Docker Compose to build and start all services:
+The database is automatically initialized using the `create-people-db.sql` file located in `init-scripts/`.
+Ensure the script is structured correctly:
+
+**`init-scripts/create-people-db.sql`**
+```sql
+CREATE DATABASE IF NOT EXISTS nodedb;
+
+USE nodedb;
+
+CREATE TABLE IF NOT EXISTS people (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+INSERT INTO people (name) VALUES ('Pedro');
+INSERT INTO people (name) VALUES ('Wesley');
+```
+
+### 4. Build and Start Services
+
+Use Docker Compose to build and start the services:
 
 ```bash
 docker-compose up --build
 ```
 
-This command performs the following:
+This command performs the following actions:
 
 - **Builds Docker Images** for Node.js and Nginx services using their respective Dockerfiles.
 - **Starts Containers** for MySQL, Node.js, and Nginx services.
 
-By default, the application is accessible at `http://localhost:8080`.
+By default, the application will be available at **`http://localhost:8080`**.
 
-### 4. Verify Services
+### 5. Verify Services
 
-Ensure all services are running:
+Ensure all services are running properly:
 
 ```bash
 docker-compose ps
@@ -93,17 +116,17 @@ docker-compose ps
 ## Service Details
 
 ### MySQL Service
-- **Image**: `mysql:5.7`
-- **Data Persistence**: Data is stored in the `./mysql` directory on the host machine, mapped to `/var/lib/mysql` in the container.
+- **Image**: `mysql:8.0`
+- **Data Persistence**: Data is stored in the `./mysql` directory, mapped to `/var/lib/mysql` in the container.
 - **Environment Variables**:
-  - `MYSQL_DATABASE`: Name of the default database (`nodedb`).
+  - `MYSQL_DATABASE`: Default database name (`nodedb`).
   - `MYSQL_ROOT_PASSWORD`: Root password for MySQL (`root`).
 
 ### Node.js Service
 - **Build Context**: `./node` directory.
 - **Dockerfile**: `Dockerfile.prod`
 - **Source Code**: Mounted from the host's `./node` directory to `/usr/src/app` in the container.
-- **Ports**: Exposes port `3000`.
+- **Ports**: Exposes port `3000` internally.
 
 ### Nginx Service
 - **Build Context**: `./nginx` directory.
@@ -112,19 +135,25 @@ docker-compose ps
 
 ## Common Commands
 
-- **Stop Services**:
+- **Stop Services**
 
 ```bash
 docker-compose down
 ```
 
-- **View Logs**:
+- **Remove MySQL Volume (if database doesn't initialize correctly):**
+
+```bash
+docker volume rm docker-studies_mysql
+```
+
+- **View Logs**
 
 ```bash
 docker-compose logs
 ```
 
-- **Access a Running Container**:
+- **Access a Running Container**
 
 ```bash
 docker exec -it [container_name] /bin/bash
@@ -134,9 +163,21 @@ Replace `[container_name]` with `db`, `nodeserver`, or `nginx` as needed.
 
 ## Troubleshooting
 
-- **Database Connection Issues**: Ensure the MySQL service is running and accessible. Verify credentials in the Node.js configuration match those set in the MySQL service.
-- **Port Conflicts**: Ensure ports `3000` and `8080` are not in use by other applications.
-- **Permission Errors**: On Unix-based systems, you might need to adjust permissions for the `./mysql` directory to ensure the MySQL container can read/write data.
+### Database Issues
+- **`Table 'nodedb.people' doesn't exist`**:
+  - Run `docker-compose down`
+  - Remove the MySQL volume: `docker volume rm docker-studies_mysql`
+  - Run `docker-compose up` again to reinitialize the database.
+
+### Port Conflicts
+- Ensure ports `3000` and `8080` are not already occupied by other applications.
+
+### Permission Errors
+- On Unix-based systems, adjust permissions for the `./mysql` directory to ensure the MySQL container can read/write data:
+
+```bash
+sudo chmod -R 777 ./mysql
+```
 
 ## References
 
@@ -147,4 +188,5 @@ Replace `[container_name]` with `db`, `nodeserver`, or `nginx` as needed.
 - **MySQL Documentation**: [https://dev.mysql.com/doc/](https://dev.mysql.com/doc/)
 
 ---
+Now your documentation is clearer, easier to follow, and includes enhanced troubleshooting steps. Let me know if you'd like additional improvements! 🚀
 
